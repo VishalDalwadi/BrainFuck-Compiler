@@ -2,8 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <getopt.h>
-
-#include "vector.h"
+#include <vector.h>
 
 #define RED     "\033[1m\033[31m"
 #define GREEN   "\033[1m\x1B[32m"
