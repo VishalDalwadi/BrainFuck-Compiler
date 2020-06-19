@@ -3,6 +3,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <vector.h>
+//#include <stack.h>
 
 #define RED     "\033[1m\033[31m"
 #define GREEN   "\033[1m\x1B[32m"
@@ -23,66 +24,66 @@ typedef enum {
 
 void print_usage() {
 
-  printf(RED "Usage: bfc file [-d destination] [-s source]\n" RESET);
-  printf(GREEN "Required argument:\n" RESET);
-  printf("file                  : Brainfuck file (.bf file)\n");
-  printf(GREEN "Optional arguments:\n" RESET);
-  printf("destination           : Address to print at (Default: 0x2000)\n");
-  printf("source                : Address to read from (Default: 0x3000)\n");
+  printf( RED "Usage: bfc file [-d destination] [-s source]\n" RESET );
+  printf( GREEN "Required argument:\n" RESET );
+  printf( "file                  : Brainfuck file (.bf file)\n" );
+  printf( GREEN "Optional arguments:\n" RESET );
+  printf( "destination           : Address to print at (Default: 0x2000)\n" );
+  printf( "source                : Address to read from (Default: 0x3000)\n" );
 
 }
 
-int ends_with(const char *str1, const char *str2) {
+int ends_with( const char *str1 , const char *str2 ) {
 
-  int len_str1 = strlen(str1);
-  int len_str2 = strlen(str2);
+  int len_str1 = strlen( str1 );
+  int len_str2 = strlen( str2 );
 
-  return ((len_str1 < len_str2) ? 0 : !strcmp( &str1[len_str1 - len_str2], str2));
+  return ( ( len_str1 < len_str2 ) ? 0 : !strcmp( &str1[ len_str1 - len_str2 ] , str2 ) );
 
 }
 
-Vector *tokenize(FILE *file) {
+Vector *tokenize( FILE *file ) {
 
-  Vector *vector = create_vector( sizeof(Token));
+  Vector *vector = create_vector( sizeof( Token ) );
 
   char c;
   Token token;
 
-  while ((c = getc(file)) != EOF) {
+  while ( ( c = getc( file ) ) != EOF ) {
 
-    switch (c) {
+    switch ( c ) {
 
       case '>':
         token = TOK_INC_PTR;
-		    insert_element(vector, &token);
+		    insert_element( vector , &token );
         break;
       case '<':
         token = TOK_DEC_PTR;
-        insert_element(vector, &token);
+        insert_element( vector , &token );
         break;
       case '+':
         token = TOK_INC;
-        insert_element(vector, &token);
+        insert_element( vector, &token );
         break;
       case '-':
         token = TOK_DEC;
-        insert_element(vector, &token);
+        insert_element( vector , &token );
         break;
       case ',':
         token = TOK_READ;
-        insert_element(vector, &token);
+        insert_element( vector , &token );
         break;
       case '.':
         token = TOK_WRITE;
-        insert_element(vector, &token);
+        insert_element( vector , &token );
         break;
       case '[':
         token = TOK_LOOP;
-        insert_element(vector, &token);
+        insert_element( vector , &token );
         break;
       case ']':
         token = TOK_END_LOOP;
-        insert_element(vector, &token);
+        insert_element( vector , &token );
         break;
     }
 
@@ -92,38 +93,95 @@ Vector *tokenize(FILE *file) {
 
 }
 
-/*
-void print_vector(Vector *vector) {
+void write_assembly( FILE *file , Vector *vector , unsigned long read_address , unsigned long write_address ) {
 
-  long len = length(vector);
+  unsigned long num_tokens = length( vector );
+  unsigned long loop_num = 0;
+  //unsigned long curr_loop_num = 0;
+	
+  fprintf( file , "LXI H, 1000H\n" );
 
-  for (long i = 0; i < len; i++) {
+  for ( unsigned long i = 0 ; i < num_tokens ; i++ ) {
 
-    switch (*(Token *) get_element_at(vector, i)) {
+    switch ( *(Token *) get_element_at( vector , i ) ) {
 
       case TOK_INC_PTR:
-        printf("INC PTR\n");
+        fprintf( file , "    INX H\n" );
         break;
       case TOK_DEC_PTR:
-        printf("DEC PTR\n");
+        fprintf( file , "    DCX H\n" );
         break;
       case TOK_INC:
-        printf("INC VALUE AT PTR\n");
+        fprintf( file , "    INR M\n" );
         break;
       case TOK_DEC:
-        printf("DEC VALUE AT PTR\n");
+        fprintf( file , "    DCR M\n" );
         break;
       case TOK_READ:
-        printf("READ\n");
+        fprintf( file , "    LDA %lxH\n" , read_address );
+        read_address++;
+        fprintf( file , "    STA H\n" );
         break;
       case TOK_WRITE:
-        printf("WRITE\n");
+        fprintf( file , "    MOV A,M\n" );
+        fprintf( file , "    STA %lxH\n" , write_address );
+        write_address++;
         break;
       case TOK_LOOP:
-        printf("LOOP\n");
+        fprintf( file , "LOOP_%ld:\n" , loop_num );
+        fprintf( file , "    MOV A,M\n" );
+        fprintf( file , "    CPI 00H\n" );
+        fprintf( file , "    JZ LOOP_END_%ld\n", loop_num );
+        //push( loop_stack , &loop_num );
+        //loop_num++;
         break;
       case TOK_END_LOOP:
-        printf("END LOOP\n");
+        //curr_loop_num = *(long *) pop( loop_stack );
+        fprintf( file , "    JMP LOOP_%ld\n" , loop_num );
+        fprintf( file , "LOOP_END_%ld:\n" , loop_num );
+        loop_num++;
+        break;
+
+    }
+
+  }
+
+  fprintf( file , "HLT\n" );
+
+}
+
+/*
+void print_vector( Vector *vector ) {
+
+  unsigned long len = length( vector );
+
+  for ( unsigned long i = 0 ; i < len ; i++ ) {
+
+    switch ( *(Token *) get_element_at( vector , i ) ) {
+
+      case TOK_INC_PTR:
+        printf( "INC PTR\n" );
+        break;
+      case TOK_DEC_PTR:
+        printf( "DEC PTR\n" );
+        break;
+      case TOK_INC:
+        printf( "INC VALUE AT PTR\n" );
+        break;
+      case TOK_DEC:
+        printf( "DEC VALUE AT PTR\n" );
+        break;
+      case TOK_READ:
+        printf( "READ\n" );
+        break;
+      case TOK_WRITE:
+        printf( "WRITE\n" );
+        break;
+      case TOK_LOOP:
+        printf( "LOOP\n" );
+        break;
+      case TOK_END_LOOP:
+        printf( "END LOOP\n" );
         break;
 
     }
@@ -133,31 +191,31 @@ void print_vector(Vector *vector) {
 }
 */
 
-int main(int argc, char *argv[]) {
+int main( int argc , char *argv[] ) {
   
   char *input_filename = NULL;
   unsigned long destination = 0x2000, source = 0x3000;
   int opt;
 
-  while ((opt = getopt(argc, argv, "-:d:s:h")) != -1) {
+  while ( ( opt = getopt( argc , argv , "-:d:s:h" ) ) != -1 ) {
 
-    switch (opt) {
+    switch ( opt ) {
 
     case 'd':
-      destination = strtoul(optarg, NULL, 16);
+      destination = strtoul( optarg , NULL , 16 );
       break;
     case 's':
-      source = strtoul(optarg, NULL, 16);
+      source = strtoul( optarg , NULL , 16 );
       break;
     case 'h':
       print_usage();
-      exit(0);
+      exit( 0 );
     case 1:
       input_filename = optarg;
-      if ( !ends_with( input_filename, ".bf") ) {
+      if ( !ends_with( input_filename , ".bf" ) ) {
         
-        printf(RED "File extension should be .bf\n" RESET);
-        exit(1);
+        printf( RED "File extension should be .bf\n" RESET );
+        exit( 1 );
       
       }
       break;
@@ -166,28 +224,35 @@ int main(int argc, char *argv[]) {
 
   }
 
-  if (input_filename == NULL) {
+  if ( input_filename == NULL ) {
   
     print_usage();
-    exit(1);
+    exit( 1 );
   
   }
 
-  FILE *input_file = fopen(input_filename, "r");
+  FILE *input_file = fopen( input_filename , "r" );
 
-  if (input_file == NULL) {
+  if ( input_file == NULL ) {
   
-    printf(RED "File %s does not exist\n" RESET, input_filename);
-    exit(1);
+    printf( RED "File %s does not exist\n" RESET , input_filename );
+    exit( 1 );
   
   }
 
-  Vector *tokens = tokenize(input_file);
+  Vector *tokens = tokenize( input_file );
 
-  fclose(input_file);
-//  print_vector(tokens);
-  
-  delete_vector(tokens);
+  fclose( input_file );
+
+  input_filename[ strlen( input_filename ) - 3 ] = '\0';
+  FILE *output_file = fopen( input_filename , "w" );
+//  print_vector( tokens );
+	
+  write_assembly( output_file , tokens , source , destination );
+
+  fclose( output_file );
+
+  delete_vector( tokens );
 
   return 0;
 

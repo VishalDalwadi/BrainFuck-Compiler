@@ -1,6 +1,8 @@
 #ifndef _VECTOR_H_
-#include <stddef.h>
 #define _VECTOR_H_
+
+#include <stddef.h>
+
 #define INITIAL_SIZE 10
 
 typedef struct {
