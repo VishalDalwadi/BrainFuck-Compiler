@@ -3,7 +3,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <vector.h>
-//#include <stack.h>
+#include <stack.h>
 
 #define RED     "\033[1m\033[31m"
 #define GREEN   "\033[1m\x1B[32m"
@@ -96,14 +96,18 @@ Vector *tokenize( FILE *file ) {
 void write_assembly( FILE *file , Vector *vector , unsigned long read_address , unsigned long write_address ) {
 
   unsigned long num_tokens = length( vector );
-  unsigned long loop_num = 0;
+  unsigned long loop_num = 0, curr_loop_num;
   //unsigned long curr_loop_num = 0;
 	
   fprintf( file , "LXI H, 1000H\n" );
+  fprintf( file , "LXI D, %lxH\n" , read_address );
+  fprintf( file , "LXI B, %lxH\n" , write_address );
+
+  Stack *loop_stack = create_stack( sizeof( unsigned long ) );
 
   for ( unsigned long i = 0 ; i < num_tokens ; i++ ) {
 
-    switch ( *(Token *) get_element_at( vector , i ) ) {
+    switch ( *( Token * ) get_element_at( vector , i ) ) {
 
       case TOK_INC_PTR:
         fprintf( file , "    INX H\n" );
@@ -118,13 +122,14 @@ void write_assembly( FILE *file , Vector *vector , unsigned long read_address , 
         fprintf( file , "    DCR M\n" );
         break;
       case TOK_READ:
-        fprintf( file , "    LDA %lxH\n" , read_address );
-        read_address++;
-        fprintf( file , "    STA H\n" );
+        fprintf( file , "    LDAX D\n" );
+        fprintf( file , "    MOV M,A\n" );
+        fprintf( file , "    INX D\n" );
         break;
       case TOK_WRITE:
         fprintf( file , "    MOV A,M\n" );
-        fprintf( file , "    STA %lxH\n" , write_address );
+        fprintf( file , "    STAX B\n" );
+        fprintf( file , "    INX B\n" );
         write_address++;
         break;
       case TOK_LOOP:
@@ -132,14 +137,13 @@ void write_assembly( FILE *file , Vector *vector , unsigned long read_address , 
         fprintf( file , "    MOV A,M\n" );
         fprintf( file , "    CPI 00H\n" );
         fprintf( file , "    JZ LOOP_END_%ld\n", loop_num );
-        //push( loop_stack , &loop_num );
-        //loop_num++;
+        push( loop_stack , &loop_num );
+        loop_num++;
         break;
       case TOK_END_LOOP:
-        //curr_loop_num = *(long *) pop( loop_stack );
-        fprintf( file , "    JMP LOOP_%ld\n" , loop_num );
-        fprintf( file , "LOOP_END_%ld:\n" , loop_num );
-        loop_num++;
+        curr_loop_num = *( unsigned long * ) pop( loop_stack );
+        fprintf( file , "    JMP LOOP_%ld\n" , curr_loop_num );
+        fprintf( file , "LOOP_END_%ld:\n" , curr_loop_num );        
         break;
 
     }
@@ -147,6 +151,8 @@ void write_assembly( FILE *file , Vector *vector , unsigned long read_address , 
   }
 
   fprintf( file , "HLT\n" );
+
+  delete_stack( loop_stack );
 
 }
 
@@ -157,7 +163,7 @@ void print_vector( Vector *vector ) {
 
   for ( unsigned long i = 0 ; i < len ; i++ ) {
 
-    switch ( *(Token *) get_element_at( vector , i ) ) {
+    switch ( *( Token * ) get_element_at( vector , i ) ) {
 
       case TOK_INC_PTR:
         printf( "INC PTR\n" );

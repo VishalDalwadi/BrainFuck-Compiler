@@ -14,20 +14,20 @@ typedef struct {
 
 } Vector;
 
-Vector *create_vector(size_t element_size);
+Vector *create_vector( size_t element_size );
 
-unsigned long length(Vector *vector);
+unsigned long length( Vector *vector );
 
-int insert_element(Vector *vector, void *node_data);
+int insert_element( Vector *vector , void *node_data );
 
-int insert_element_at(Vector *vector, unsigned long index, void *node_data);
+int insert_element_at( Vector *vector , unsigned long index , void *node_data );
 
-void *get_element_at(Vector *vector, long index);
+void *get_element_at( Vector *vector , long index );
 
-void set_element_at(Vector *vector, long index, void *node_data);
+void set_element_at( Vector *vector , long index , void *node_data );
 
-void *delete_element(Vector *vector, long index);
+void *delete_element( Vector *vector , long index );
 
-void delete_vector(Vector *vector);
+void delete_vector( Vector *vector );
 
 #endif

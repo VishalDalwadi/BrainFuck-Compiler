@@ -5,11 +5,14 @@ ODIR = bin
 SDIR = src
 IDIR = include
 
-$(OUT): $(ODIR)/main.o $(ODIR)/vector.o
-	$(CC) $(CFLAGS) $(ODIR)/main.o $(ODIR)/vector.o -o $(ODIR)/$(OUT)
+$(OUT): $(ODIR)/main.o $(ODIR)/stack.o $(ODIR)/vector.o
+	$(CC) $(CFLAGS) $(ODIR)/main.o $(ODIR)/vector.o $(ODIR)/stack.o -o $(ODIR)/$(OUT)
 
-$(ODIR)/main.o: $(SDIR)/main.c $(IDIR)/vector.h
+$(ODIR)/main.o: $(SDIR)/main.c $(IDIR)/stack.h $(IDIR)/vector.h
 	$(CC) $(CFLAGS) -c $(SDIR)/main.c -I$(IDIR) -o $(ODIR)/main.o
+
+$(ODIR)/stack.o: $(SDIR)/stack.c $(IDIR)/stack.h $(IDIR)/vector.h
+	$(CC) $(CFLAGS) -c $(SDIR)/stack.c -I$(IDIR) -o $(ODIR)/stack.o
 
 $(ODIR)/vector.o: $(SDIR)/vector.c $(IDIR)/vector.h
 	$(CC) $(CFLAGS) -c $(SDIR)/vector.c -I$(IDIR) -o $(ODIR)/vector.o
