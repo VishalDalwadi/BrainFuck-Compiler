@@ -45,6 +45,7 @@ int ends_with( const char *str1 , const char *str2 ) {
 Vector *tokenize( FILE *file ) {
 
   Vector *vector = create_vector( sizeof( Token ) );
+  Stack *stack = create_stack( sizeof( char ) );
 
   char c;
   Token token;
@@ -80,12 +81,27 @@ Vector *tokenize( FILE *file ) {
       case '[':
         token = TOK_LOOP;
         insert_element( vector , &token );
+        push( stack , &c );
         break;
       case ']':
         token = TOK_END_LOOP;
         insert_element( vector , &token );
+        if ( pop( stack ) == NULL ) {
+
+          printf( RED "Error in loops: Make sure brackets([ and ]) are balanced.\n" RESET );
+          exit( 1 );
+
+        }
         break;
+
     }
+
+  }
+
+  if ( pop( stack ) != NULL ) {
+
+    printf( RED "Error in loops: Make sure brackets([ and ]) are balanced.\n" RESET );
+    exit( 1 );
 
   }
 
